@@ -1,0 +1,7 @@
+requests>=2.31
+PyYAML>=6.0
+openpyxl>=3.1
+bcrypt>=4.0
+schedule>=1.2
+holidays>=0.40
+msoffcrypto-tool>=5.0

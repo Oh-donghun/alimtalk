@@ -1,0 +1,6 @@
+config.yaml
+sent.db
+out/
+logs/
+PAUSE
+__pycache__/

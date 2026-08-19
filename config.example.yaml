@@ -1,0 +1,114 @@
+# ============================================================
+#  배송 알림톡 자동발송 설정 파일
+#  이 파일을 config.yaml 로 복사한 뒤 값을 채워 넣으세요.
+#  (config.yaml 은 절대 남에게 공유하지 마세요 - API 키가 들어있습니다)
+# ============================================================
+
+# ---------- 관리 페이지 ----------
+web:
+  token: "여기에-아무-비밀번호-길게"   # 관리 페이지 주소에 붙는 비밀번호. 남에게 알려주지 마세요
+  port: 8080
+
+# ---------- 알리고 공통 기본값 ----------
+# 알리고 계정이 상점마다 다르면 아래는 비워두고 각 상점의 aligo: 아래에 적으세요.
+aligo:
+  failover: "N"                  # 알림톡 실패 시 문자로 대체 발송할지 (안심번호로도 카톡이 가면 N)
+  testmode: "N"                  # Y 로 두면 알리고 테스트모드(실제 발송X, 포인트 차감X)
+
+# ---------- 알리고 잔액(포인트) 부족 알림 ----------
+point_alert:
+  enabled: true
+  threshold: 300                 # 보낼 수 있는 알림톡이 이 건수 이하로 떨어지면 문자 알림
+  admin_phones:                  # 알림 받을 휴대폰 번호 (여러 개 가능)
+    - "01012345678"
+  bank_accounts:                 # 상점별 충전 계좌 (문자에 함께 안내됩니다)
+    ojingeo_mom: "국민 123456-78-901234 (주)오징어엄마"
+    donggwang: "농협 302-1234-5678-91 동광수산"
+
+# ---------- 공통 안전장치 ----------
+safety:
+  skip_weekends: true            # 토/일 발송 안 함
+  skip_kr_holidays: true         # 대한민국 공휴일 발송 안 함 (holidays 라이브러리)
+  # 배송 휴무일은 관리 페이지(브라우저)에서 추가/삭제하는 것이 편합니다.
+  # 아래 extra_holidays 는 고정으로 늘 쉬는 날이 있을 때만 사용하세요.
+  extra_holidays: []
+  # 폴더에 PAUSE 라는 이름의 파일이 있으면 무조건 발송을 건너뜁니다.
+  # (배송 문제 생겼을 때: 그냥 빈 파일 PAUSE 하나 만들어 두세요. 다시 보내려면 삭제)
+  pause_file: "PAUSE"
+  only_today: true               # 오늘 발송(송장등록)된 주문만 대상으로 함
+  max_send_per_run: 300          # 한 번 실행에 이 건수를 넘으면 중단(사고 방지)
+
+# ---------- 상점 정의 ----------
+shops:
+
+  # 1) 오징어엄마 : 네이버 + 쿠팡, 15:30
+  ojingeo_mom:
+    display_name: "오징어엄마"
+    run_at: "15:30"
+    aligo:
+      # 오징어엄마 알리고 계정
+      userid: "오징어엄마 알리고 아이디"
+      apikey: "오징어엄마 알리고 API KEY"
+      sender: "01012345678"      # 이 계정에 등록된 발신번호 (숫자만)
+      senderkey: "오징어엄마 카카오채널 발신프로필키"
+      tpl_code: "T_XXXXXX"       # 알리고에 등록된 승인 템플릿 코드
+      # 템플릿 본문은 알리고에서 자동으로 가져옵니다(수정 불필요).
+      # 직접 지정하고 싶으면 아래 주석을 풀고 템플릿 본문을 그대로 붙여넣으세요.
+      # template_text: |
+      #   #{고객명}님, 주문하신 #{주문상품명} 상품이 발송되었습니다.
+      #   ...
+    channels:
+      naver:
+        enabled: true
+        client_id: "네이버 커머스API 애플리케이션 ID"
+        client_secret: "네이버 커머스API 애플리케이션 시크릿"
+        # 발송처리(송장 등록) 된 주문을 가져옵니다.
+        trigger: "DISPATCHED"
+      coupang:
+        enabled: true
+        vendor_id: "A00012345"
+        access_key: "쿠팡 OPEN API Access Key"
+        secret_key: "쿠팡 OPEN API Secret Key"
+        status: "DEPARTURE"      # 배송지시 상태 (송장 업로드된 주문)
+        lookback_days: 7         # 며칠 전 주문까지 조회할지
+    option_cleanup:
+      enabled: false             # 오징어엄마는 옵션명 그대로 사용
+
+  # 2) 동광수산 : 네이버만, 16:30
+  donggwang:
+    display_name: "동광수산"
+    run_at: "16:30"
+    aligo:
+      # 동광수산 알리고 계정 (오징어엄마와 다른 아이디)
+      userid: "동광수산 알리고 아이디"
+      apikey: "동광수산 알리고 API KEY"
+      sender: "01087654321"
+      senderkey: "동광수산 카카오채널 발신프로필키"
+      tpl_code: "T_YYYYYY"
+    channels:
+      naver:
+        enabled: true
+        client_id: "동광수산 커머스API 애플리케이션 ID"
+        client_secret: "동광수산 커머스API 애플리케이션 시크릿"
+        trigger: "DISPATCHED"
+      coupang:
+        enabled: false
+    # 동광수산 옵션명 정리 규칙
+    option_cleanup:
+      enabled: true
+      # 아래 순서대로 적용됩니다.
+      # 1) remove_patterns : 정규식에 맞는 부분을 삭제
+      remove_patterns:
+        - "\\(\\s*[+\\-]?\\s*[\\d,]+\\s*원\\s*\\)"     # (+3,000원) 같은 추가금 표기
+        - "^\\s*\\d+\\s*개\\s*"                       # 맨 앞의 "1개 " (쿠팡식 표기)
+        - "\\[(특가|무료배송|당일발송|이벤트|추천|인기)[^\\]]*\\]"  # [특가], [무료배송] 같은 홍보 문구 (크기 표기 [특대]는 유지)
+        - "(옵션|선택|상품)\\s*\\d*\\s*[:：]\\s*"        # "옵션1: " / "선택: " 같은 접두어
+        - "★|☆|♥|♡|※|■|◆|●"                           # 장식 특수문자
+      # 2) replace : 문자열 치환 (원본 -> 바꿀말)
+      replace:
+        "국내산 ": ""
+        "  ": " "
+      # 3) 최종 최대 길이(넘으면 뒤에 … 붙임). 카카오 변수는 너무 길면 안 됨
+      max_length: 40
+      # 4) 여러 옵션(같은 주문번호)이면 이렇게 합칩니다: "옵션A 외 1건"
+      multi_join: "외 {n}건"
